@@ -313,6 +313,24 @@ class GaiaData:
         self._cov = C
         return self._cov
 
+    def get_astrometry_samples(self, Nsamples=100, seed=None):
+        """
+        Get Nsamples of ra, dec, parallax, pmra, pmdec
+        returns NxNsamplesx5
+        Assumes units were not mucked around with
+        """
+        N = len(self.data)
+        cov = self.get_cov()
+        cov = cov[:,:5,:5] # drop RV if it exists
+        samples = np.empty((N,Nsamples,5))
+        if seed is not None: np.random.seed(seed)
+        for i in range(N):
+            _mu = [self.ra[i].value, self.dec[i].value, self.parallax[i].value,
+                   self.pmra[i].value, self.pmdec[i].value]
+            _cov = cov[i]
+            samples[i,:,:] = np.random.multivariate_normal(_mu, _cov, size=Nsamples)
+        return samples
+
     ##########################################################################
     # Astropy connections
     #
