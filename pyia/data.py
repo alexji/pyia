@@ -120,6 +120,7 @@ class GaiaData:
         self._cov = None
         self._cov_units = None
         self._coord = None
+        self._coord2d = None
 
     @classmethod
     def from_query(cls, query_str, login_info=None):
@@ -350,3 +351,19 @@ class GaiaData:
                                          pm_dec=self.pmdec, **kw)
 
         return self._coord
+
+    @property
+    def skycoord2d(self):
+        """
+        Return an `~astropy.coordinates.SkyCoord` object to represent
+        all coordinates. Note: this requires Astropy v3.0 or higher!
+        """
+        if self._coord2d is None:
+            kw = dict()
+            if self._has_rv:
+                kw['radial_velocity'] = self.radial_velocity
+            self._coord2d = coord.SkyCoord(ra=self.ra, dec=self.dec,
+                                         pm_ra_cosdec=self.pmra,
+                                         pm_dec=self.pmdec, **kw)
+
+        return self._coord2d
