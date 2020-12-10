@@ -1,4 +1,19 @@
-1.0 (unreleased)
+1.3 (unreleased)
+================
+
+
+1.2 (2020-12-01)
+================
+
+- Added support for EDR3.
+
+
+1.1 (2020-07-13)
+================
+
+- Fix packaging error.
+
+1.0 (2020-07-11)
 ================
 
 - Added ``get_uwe`` and ``get_ruwe`` methods to compute the unit weight error

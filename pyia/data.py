@@ -68,13 +68,17 @@ gaia_unit_map = {
     'ref_epoch': u.year
 }
 
-DEFAULT_REF_EPOCH = Time(2015.5, format='decimalyear')
+REF_EPOCH = {
+    'DR2': Time(2015.5, format='jyear'),
+    'EDR3': Time(2016.0, format='jyear')
+}
+LATEST_RELEASE = 'EDR3'
 
 
 class GaiaData:
     """Class for loading and interacting with data from the Gaia mission. This
     should work with data from any data release, i.e., DR1 gaia_source or TGAS,
-    or DR2 gaia_source.
+    or DR2 gaia_source, or EDR3 gaia_source.
 
     Parameters
     ----------
@@ -371,7 +375,7 @@ class GaiaData:
         else:
             C[:, 5, 5] = np.inf
 
-        C[:, 5, 5][np.isnan(C[:, 5, 5])] = np.inf # missing values
+        C[:, 5, 5][np.isnan(C[:, 5, 5])] = np.inf  # missing values
 
         for i, name1 in enumerate(names):
             for j, name2 in enumerate(names):
@@ -411,7 +415,7 @@ class GaiaData:
         c = self.get_skycoord(distance=False)
         return dustmaps_cls().query(c)
 
-    def get_ext(self, dustmaps_cls=None):
+    def get_ext(self, ebv=None, dustmaps_cls=None):
         """Compute the E(B-V) reddening at this location
 
         This requires the `dustmaps <http://dustmaps.readthedocs.io>`_ package
@@ -428,12 +432,17 @@ class GaiaData:
         A_BP
         A_RP
         """
+        if 'ebv' not in self._cache:
+            if ebv is None:
+                self._cache['ebv'] = self.get_ebv(dustmaps_cls=dustmaps_cls)
+            else:
+                self._cache['ebv'] = ebv
+
         if 'A_G' not in self._cache:
-            EBV = self.get_ebv(dustmaps_cls=dustmaps_cls)
             A_G, A_B, A_R = get_ext(self.phot_g_mean_mag.value,
                                     self.phot_bp_mean_mag.value,
                                     self.phot_rp_mean_mag.value,
-                                    EBV)
+                                    self._cache['ebv'])
 
             self._cache['A_G'] = A_G * u.mag
             self._cache['A_B'] = A_B * u.mag
@@ -443,19 +452,23 @@ class GaiaData:
                 self._cache['A_B'],
                 self._cache['A_R'])
 
-    def get_G0(self):
-        """Return the extinction-corrected G-band magnitude."""
-        A, _, _ = self.get_ext()
+    def get_G0(self, *args, **kwargs):
+        """Return the extinction-corrected G-band magnitude. Any arguments are
+        passed to ``get_ext()``.
+        """
+        A, _, _ = self.get_ext(*args, **kwargs)
         return self.phot_g_mean_mag - A
 
-    def get_BP0(self):
-        """Return the extinction-corrected G_BP magnitude."""
-        _, A, _ = self.get_ext()
+    def get_BP0(self, *args, **kwargs):
+        """Return the extinction-corrected G_BP magnitude. Any arguments are
+        passed to ``get_ext()``."""
+        _, A, _ = self.get_ext(*args, **kwargs)
         return self.phot_bp_mean_mag - A
 
-    def get_RP0(self):
-        """Return the extinction-corrected G_RP magnitude."""
-        _, _, A = self.get_ext()
+    def get_RP0(self, *args, **kwargs):
+        """Return the extinction-corrected G_RP magnitude. Any arguments are
+        passed to ``get_ext()``."""
+        _, _, A = self.get_ext(*args, **kwargs)
         return self.phot_rp_mean_mag - A
 
     def get_uwe(self):
@@ -503,7 +516,7 @@ class GaiaData:
         return self.get_skycoord()
 
     def get_skycoord(self, distance=None, radial_velocity=None,
-                     ref_epoch=DEFAULT_REF_EPOCH):
+                     ref_epoch=REF_EPOCH[LATEST_RELEASE]):
         """
         Return an `~astropy.coordinates.SkyCoord` object to represent
         all coordinates. Note: this requires Astropy v3.0 or higher!
@@ -550,9 +563,9 @@ class GaiaData:
 
         # Reference epoch
         if 'ref_epoch' in self.data.colnames:
-            obstime = Time(self.ref_epoch.value, format='decimalyear')
+            obstime = Time(self.ref_epoch.value, format='jyear')
         else:
-            obstime = Time(ref_epoch, format='decimalyear')
+            obstime = Time(ref_epoch, format='jyear')
 
         kw['obstime'] = obstime
 

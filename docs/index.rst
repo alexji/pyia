@@ -8,16 +8,15 @@ Source code `on GitHub <https://github.com/adrn/pyia>`_.
 
 What ``pyia`` can do for you:
 
-* Provides access to Gaia data columns as `~astropy.units.Quantity` objects,
-  i.e. with units (e.g., ``data.parallax`` will have units
-  'milliarcsecond'),
-* Construct covariance matrices for Gaia data (`pyia.GaiaData.get_cov()`),
+* Access to Gaia data columns as `~astropy.units.Quantity` objects,
+  i.e., with units (e.g., ``data.parallax`` will have units 'milliarcsecond')
+* Construct covariance matrices for Gaia data (`pyia.GaiaData.get_cov()`)
 * Generate random samples from the Gaia error distribution per source
-  (`pyia.GaiaData.get_error_samples()`),
+  (`pyia.GaiaData.get_error_samples()`)
 * Create `~astropy.coordinates.SkyCoord` objects from Gaia data
-  (`pyia.GaiaData.skycoord`),
-* Support for executing simple (small) remote queries via the Gaia science
-  archive and automatically fetching results (`pyia.GaiaData.from_query()`).
+  (`pyia.GaiaData.skycoord`)
+* Execute simple (small) remote queries via the Gaia science archive and
+  automatically fetch the results (`pyia.GaiaData.from_query()`)
 
 ************
 Installation
@@ -45,6 +44,13 @@ execute some imports  we'll need later::
     >>> import numpy as np
     >>> from pyia import GaiaData
 
+This code block can be ignored and is only used to set up paths to data files
+used in the examples below::
+
+    >>> import os, pyia
+    >>> data_path = os.path.join(os.path.split(pyia.__file__)[0],
+    ...                          'tests/data')
+
 If you've already downloaded some Gaia data in tabular format and saved it to a
 file on disk, you can create an instance by passing the path to the file. As an
 example, I've created a small subset of Gaia DR2 data downloaded from the
@@ -58,14 +64,14 @@ the following query::
 This data is also provided with ``pyia``, so we'll load the cached version
 here::
 
-    >>> g = GaiaData('docs/_static/gdr2_sm.fits')
+    >>> g = GaiaData(f'{data_path}/gdr2_sm.fits')
     >>> g
     <GaiaData: 100 rows>
 
 As mentioned above, you can also pass in pre-loaded data::
 
     >>> from astropy.table import Table
-    >>> tbl = Table.read('docs/_static/gdr2_sm.fits')
+    >>> tbl = Table.read(f'{data_path}/gdr2_sm.fits')
     >>> GaiaData(tbl)
     <GaiaData: 100 rows>
 
@@ -172,7 +178,7 @@ corresponding distance!). We may want to fill those values with NaN's or just
 filter them out. Let's work now with a small subset of the Gaia data that
 contains some negative parallax measurements::
 
-    >>> g = GaiaData('docs/_static/gdr2_sm_negplx.fits')
+    >>> g = GaiaData(f'{data_path}/gdr2_sm_negplx.fits')
     >>> len(g)
     8
     >>> g[np.isfinite(g.parallax) & (g.parallax > 0)]
@@ -261,7 +267,7 @@ distribution for the full-space velocity.
 
 First, let's load the data:
 
-    >>> g_rv = GaiaData('docs/_static/gdr2_rv_sm.fits')
+    >>> g_rv = GaiaData(f'{data_path}/gdr2_rv_sm.fits')
 
 All of these sources have measured radial velocities:
 
@@ -286,6 +292,7 @@ coordinate transformation machinery:
 
     >>> c_samples = g_samples.get_skycoord()
     >>> import astropy.coordinates as coord
+    >>> _ = coord.galactocentric_frame_defaults.set('v4.0')
     >>> galcen = c_samples.transform_to(coord.Galactocentric)
 
 Let's now look at the uncertainty on the magnitude of the total velocity, ``v``,
@@ -298,11 +305,11 @@ velocity for these sources:
 
     >>> err_v = np.std(v, axis=1)
     >>> err_v # doctest: +FLOAT_CMP
-    <Quantity [1.19954161, 0.90144356, 0.75698667, 0.57958176, 0.56774611,
-               4.99734449, 0.56438114, 0.40384664, 0.1379816 , 0.3842376 ,
-               1.03997745, 1.70031226, 0.10332231, 2.6339568 , 0.22981709,
-               0.08669366, 0.63096227, 0.65236441, 0.7876732 , 0.84191475,
-               1.26240366, 2.13720038, 1.76550184, 1.14999745] km / s>
+    <Quantity [1.19963698, 0.90448355, 0.76143172, 0.58234578, 0.56352556,
+               5.05012474, 0.57285428, 0.41450777, 0.13843949, 0.40697535,
+               1.01139842, 1.72859784, 0.10139791, 2.64303227, 0.22751807,
+               0.0897801 , 0.62391201, 0.65292275, 0.77665343, 0.84242905,
+               1.27174119, 2.13547719, 1.80547001, 1.15228657] km / s>
 
 Most of these uncertainties are less than 1-2 km/s! These take into account the
 parallax, proper motion, and radial velocity uncertainties provided by Gaia.
